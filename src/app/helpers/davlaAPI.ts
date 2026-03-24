@@ -1,3 +1,10 @@
+import {
+  BadGatewayException,
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import config from '../config';
 
 export interface VehicleResponse {
@@ -18,26 +25,72 @@ export interface VehicleResponse {
   euroStatus?: string;
 }
 
-const DVLA_URL =
-  'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles';
+const DVLA_URL = config.devla.baseUrl;
+
+const getDvlaApiKey = () => {
+  if (config.devla.defaultKeyType === 'paid' && config.devla.paidDevialKey) {
+    return config.devla.paidDevialKey;
+  }
+
+  return config.devla.freeDevialKey || config.devla.paidDevialKey;
+};
 
 export const freeDvlaApi = async (
   carNumber: string,
 ): Promise<VehicleResponse> => {
+  const apiKey = getDvlaApiKey();
+
+  if (!apiKey) {
+    throw new InternalServerErrorException(
+      'DVLA API key is missing from environment configuration',
+    );
+  }
+
   const vrn = carNumber.replace(/\s/g, '').toUpperCase();
 
-  const response = await fetch(DVLA_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': config.devla.freeDevialKey!,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ registrationNumber: vrn }),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(DVLA_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ registrationNumber: vrn }),
+    });
+  } catch {
+    throw new ServiceUnavailableException(
+      'Unable to connect to DVLA service right now',
+    );
+  }
 
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err?.errors?.[0]?.detail ?? `HTTP ${response.status}`);
+    let errorMessage = `DVLA request failed with status ${response.status}`;
+
+    try {
+      const err = await response.json();
+      errorMessage = err?.errors?.[0]?.detail ?? errorMessage;
+    } catch {
+      const errText = await response.text();
+      if (errText) {
+        errorMessage = errText;
+      }
+    }
+
+    if (response.status === 400) {
+      throw new BadRequestException(errorMessage);
+    }
+
+    if (response.status === 404) {
+      throw new NotFoundException(errorMessage);
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new BadGatewayException('DVLA API authentication failed');
+    }
+
+    throw new BadGatewayException(errorMessage);
   }
 
   return response.json() as Promise<VehicleResponse>;
