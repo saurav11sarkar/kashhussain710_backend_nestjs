@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import config from '../config';
 
+// ─── Interfaces ───────────────────────────────────────────────
+
 export interface VehicleResponse {
   registrationNumber: string;
   taxStatus: string;
@@ -24,6 +26,8 @@ export interface VehicleResponse {
   dateOfLastV5CIssued: string;
   euroStatus?: string;
   wheelplan?: string;
+  revenueWeight?: number;
+  typeApproval?: string;
 }
 
 // ─── Internal helper ────────────────────────────────────────────────
@@ -82,6 +86,7 @@ async function callDvla(
 
   let response: Response;
 
+  let response: Response;
   try {
     response = await fetch(config.devla.baseUrl, {
       method: 'POST',
@@ -95,7 +100,7 @@ async function callDvla(
   } catch (error) {
     console.log(error);
     throw new ServiceUnavailableException(
-      'Unable to connect to DVLA service right now',
+      `Unable to connect to DVLA service: ${err?.message || 'Unknown error'}`,
     );
   }
 
@@ -103,7 +108,6 @@ async function callDvla(
 
   if (!response.ok) {
     let errorMessage = `DVLA request failed with status ${response.status}`;
-
     try {
       const err = await response.json();
       console.log('DVLA ERROR BODY:', err);
@@ -124,7 +128,17 @@ async function callDvla(
         'DVLA API authentication failed (check API key or IP)',
       );
 
-    throw new BadGatewayException(errorMessage);
+  let average = 0;
+  if (sortedTests.length > 1 && odometerReadings.length > 1) {
+    const firstDate = new Date(sortedTests[0].completedDate).getTime();
+    const lastDate = new Date(
+      sortedTests[sortedTests.length - 1].completedDate,
+    ).getTime();
+    const years = Math.max(
+      (lastDate - firstDate) / (1000 * 60 * 60 * 24 * 365),
+      1,
+    );
+    average = Math.round((lastMotMileage - odometerReadings[0]) / years);
   }
 
   return response.json() as Promise<VehicleResponse>;

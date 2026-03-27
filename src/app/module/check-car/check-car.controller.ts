@@ -1,15 +1,27 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CheckCarService } from './check-car.service';
-import { CheckCarRouteDto } from './dto/check-car-route.dto';
+import { CreateCheckCarDto } from './dto/create-check-car.dto';
 import AuthGuard from 'src/app/middlewares/auth.guard';
 import type { Request } from 'express';
 

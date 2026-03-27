@@ -36,13 +36,43 @@ export default {
     secretKey: process.env.STRIPE_SECRET_KEY,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   },
-  devla: {
+  // dvla: {
+  //   baseUrl:
+  //     process.env.DVLA_BASE_URL ||
+  //     'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles',
+  //   defaultKeyType: process.env.DVLA_DEFAULT_KEY_TYPE || 'free',
+  //   freeApiKey: process.env.FREE_DEVIAL_KEY || process.env.DVLA_FREE_API_KEY,
+  //   paidApiKey: process.env.PAID_DEVIAL_KEY || process.env.DVLA_PAID_API_KEY,
+  // },
+  // dvsa: {
+  //   clientId: process.env.DVSA_CLIENT_ID,
+  //   clientSecret: process.env.DVSA_CLIENT_SECRET,
+  //   apiKey: process.env.DVSA_API_KEY,
+  //   scope: process.env.DVSA_SCOPE || 'https://tapi.dvsa.gov.uk/.default',
+  //   tokenUrl: process.env.DVSA_TOKEN_URL,
+  //   motApiUrl:
+  //     process.env.DVSA_MOT_API_URL ||
+  //     'https://history.mot.api.gov.uk/v1/trade/vehicles/registration/',
+  // },
+  dvla: {
     baseUrl:
       process.env.DVLA_BASE_URL ||
       'https://driver-vehicle-licensing.api.gov.uk/vehicle-enquiry/v1/vehicles',
-    freeDevialKey: process.env.DVLA_FREE_API_KEY || process.env.FREE_DEVIAL_KEY,
-    paidDevialKey: process.env.DVLA_PAID_API_KEY || process.env.PAID_DEVIAL_KEY,
-    defaultKeyType: process.env.DVLA_KEY_TYPE || 'free',
+    defaultKeyType: process.env.DVLA_DEFAULT_KEY_TYPE || 'free',
+    freeApiKey: process.env.FREE_DEVIAL_KEY,
+    paidApiKey: process.env.PAID_DEVIAL_KEY,
+  },
+  dvsa: {
+    // MOT History API key (x-api-key header এ যাবে)
+    motApiKey: process.env.DVSA_MOT_HISTORY,
+    motApiUrl:
+      process.env.DVSA_MOT_API_URL ||
+      'https://history.mot.api.gov.uk/v1/trade/vehicles/registration/',
+    // OAuth2 credentials (client থেকে পাওয়া গেলে .env এ বসাও)
+    clientId: process.env.DVSA_CLIENT_ID,
+    clientSecret: process.env.DVSA_CLIENT_SECRET,
+    tokenUrl: process.env.DVSA_TOKEN_URL,
+    scope: process.env.DVSA_SCOPE || 'https://tapi.dvsa.gov.uk/.default',
   },
   mot: {
     clientId: process.env.MOT_CLIENT_ID,
