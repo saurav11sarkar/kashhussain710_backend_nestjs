@@ -74,5 +74,13 @@ export default {
     tokenUrl: process.env.DVSA_TOKEN_URL,
     scope: process.env.DVSA_SCOPE || 'https://tapi.dvsa.gov.uk/.default',
   },
+  mot: {
+    clientId: process.env.MOT_CLIENT_ID,
+    clientSecret: process.env.MOT_CLIENT_SECRET,
+    apiKey: process.env.MOT_API_KEY,
+    scopeUrl: process.env.MOT_SCOPE_URL,
+    tokenUrl: process.env.MOT_TOKEN_URL,
+    apiBase: process.env.MOT_API_BASE,
+  },
   frontendUrl: process.env.FRONTEND_URL,
 };

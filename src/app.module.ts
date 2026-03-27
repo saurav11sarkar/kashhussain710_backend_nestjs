@@ -8,6 +8,7 @@ import { CheckCarModule } from './app/module/check-car/check-car.module';
 import { ContactModule } from './app/module/contact/contact.module';
 import { AuthModule } from './app/module/auth/auth.module';
 import { UserModule } from './app/module/user/user.module';
+import { MotHistoryModule } from './app/module/mot-history/mot-history.module';
 
 const databaseImports = config.isMongoEnabled
   ? [
@@ -23,7 +24,7 @@ const databaseImports = config.isMongoEnabled
   : [];
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), ...databaseImports, CheckCarModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), ...databaseImports, CheckCarModule, MotHistoryModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -10,186 +10,71 @@ import {
   VehicleResponse,
 } from 'src/app/helpers/davlaAPI';
 import { CheckCar, CheckCarDocument } from './entities/check-car.entity';
-import { CreateCheckCarDto } from './dto/create-check-car.dto';
+
 import { User, UserDocument } from '../user/entities/user.entity';
+import {
+  MotHistory,
+  MotHistoryDocument,
+} from '../mot-history/entities/mot-history.entity';
+import { freeDvlaCarCheck, paidDvlaCarCheck } from 'src/app/helpers/davlaAPI';
+import { getMotHistory } from 'src/app/helpers/motAPI';
 
 @Injectable()
 export class CheckCarService {
   constructor(
     @InjectModel(CheckCar.name)
     private readonly checkCarModel: Model<CheckCarDocument>,
+    @InjectModel(MotHistory.name)
+    private readonly motHistoryModel: Model<MotHistoryDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
   ) {}
 
-  // ─── Create Vehicle Report ─────────────────────────────────
-
-  async createCheckCar(userId: string, dto: CreateCheckCarDto) {
-    const user = await this.userModel.findById(userId);
-    if (!user) throw new NotFoundException('User not found');
-
-    const [vehicleResult, motResult] = await Promise.allSettled([
-      freeDvlaApi(dto.registrationNumber),
-      getDvsaMotHistory(dto.registrationNumber),
-    ]);
-
-    if (vehicleResult.status === 'rejected') {
-      throw vehicleResult.reason;
-    }
-
-    const vehicle = vehicleResult.value;
-    const motData =
-      motResult.status === 'fulfilled' ? motResult.value : null;
-
-    const mileageInfo = extractMileageInfo(motData);
-    const motSummary = extractMotSummary(motData);
-    const payload = this.mapVehicleToCheckCarPayload(
-      vehicle,
-      mileageInfo,
-      motSummary,
-    );
-
-    return this.checkCarModel.findOneAndUpdate(
-      { registrationNumber: vehicle.registrationNumber },
-      { $set: { ...payload, user: user._id } },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
-    );
-  }
-
-  // ─── Get Full MOT History ──────────────────────────────────
-
-  async getMotHistory(registration: string) {
-    const cleanReg = registration.replace(/\s+/g, '').toUpperCase();
-
-    const [vehicleResult, motResult] = await Promise.allSettled([
-      freeDvlaApi(cleanReg),
-      getDvsaMotHistory(cleanReg),
-    ]);
-
-    if (vehicleResult.status === 'rejected') {
-      throw vehicleResult.reason;
-    }
-
-    const vehicle = vehicleResult.value;
-    const motData: DvsaMotResponse | null =
-      motResult.status === 'fulfilled' ? motResult.value : null;
-
-    const mileageInfo = extractMileageInfo(motData);
-    const motSummary = extractMotSummary(motData);
-
-    const formattedTests = (motData?.motTests || [])
-      .sort(
-        (a, b) =>
-          new Date(b.completedDate).getTime() -
-          new Date(a.completedDate).getTime(),
-      )
-      .map((test) => ({
-        completedDate: test.completedDate,
-        testResult: test.testResult,
-        expiryDate: test.expiryDate || null,
-        odometerValue: Number(test.odometerValue) || 0,
-        odometerUnit: test.odometerUnit || 'mi',
-        odometerResultType: test.odometerResultType || 'READ',
-        motTestNumber: test.motTestNumber || null,
-        defects: (test.defects || []).map((d) => ({
-          type: d.type,
-          text: d.text,
-          dangerous: d.dangerous ?? false,
-        })),
-        advisories: (test.defects || []).filter((d) => d.type === 'ADVISORY'),
-        minorDefects: (test.defects || []).filter((d) => d.type === 'MINOR'),
-        majorDefects: (test.defects || []).filter((d) => d.type === 'MAJOR'),
-        dangerousDefects: (test.defects || []).filter(
-          (d) => d.type === 'DANGEROUS',
-        ),
-        prsFails: (test.defects || []).filter((d) => d.type === 'PRS'),
-      }));
-
-    const dvsaUnavailable = !motData;
-
-    return {
-      registration: vehicle.registrationNumber,
-      make: motData?.make || vehicle.make,
-      model: motData?.model || null,
-      firstUsedDate:
-        motData?.firstUsedDate || vehicle.monthOfFirstRegistration || null,
-      fuelType: motData?.fuelType || vehicle.fuelType || null,
-      primaryColour: motData?.primaryColour || vehicle.colour || null,
-      engineSize:
-        motData?.engineSize ||
-        (vehicle.engineCapacity ? `${vehicle.engineCapacity}` : null),
-      hasOutstandingRecall: motData?.hasOutstandingRecall || 'Unknown',
-      summary: motSummary,
-      mileage: mileageInfo,
-      motTests: formattedTests,
-      ...(dvsaUnavailable && {
-        warning:
-          'Full MOT history unavailable — DVSA credentials needed. Showing DVLA data only.',
-      }),
-    };
-  }
-
-  // ─── Map Payload ───────────────────────────────────────────
-
-  private mapVehicleToCheckCarPayload(
-    vehicle: VehicleResponse,
-    mileageInfo: ReturnType<typeof extractMileageInfo>,
-    motSummary: ReturnType<typeof extractMotSummary>,
+  // ─── Private: DVLA data → CheckCar format ───────────────────────
+  private buildCheckCarData(
+    data: Awaited<ReturnType<typeof freeDvlaCarCheck>>,
   ) {
+    const taxDays = data.taxDueDate
+      ? Math.ceil(
+          (new Date(data.taxDueDate).getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24),
+        )
+      : null;
+
+    const motDays = data.motExpiryDate
+      ? Math.ceil(
+          (new Date(data.motExpiryDate).getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24),
+        )
+      : null;
+
     return {
-      registrationNumber: vehicle.registrationNumber,
+      registrationNumber: data.registrationNumber,
       heroSection: {
         registrationNumber: vehicle.registrationNumber,
         vehicleName: vehicle.make,
         tax: {
-          expiryDate: vehicle.taxDueDate,
-          daysLeft: this.getDaysLeft(vehicle.taxDueDate),
+          expiryDate: data.taxDueDate,
+          daysLeft: taxDays !== null ? `${taxDays} days` : undefined,
         },
         mot: {
-          expiryDate: vehicle.motExpiryDate,
-          daysLeft: this.getDaysLeft(vehicle.motExpiryDate),
+          expiryDate: data.motExpiryDate,
+          daysLeft: motDays !== null ? `${motDays} days` : undefined,
         },
       },
       vehicleDetails: {
-        modelVariant: `${vehicle.make} ${vehicle.engineCapacity || ''}`.trim(),
-        description: `${vehicle.make} ${vehicle.fuelType}`,
-        primaryColour: vehicle.colour,
-        fuelType: vehicle.fuelType,
-        transmission: 'N/A',
-        driveType: 'N/A',
-        engine: vehicle.engineCapacity
-          ? `${vehicle.engineCapacity} cc`
-          : 'N/A',
-        bodyStyle: 'N/A',
-        yearOfManufacture: vehicle.yearOfManufacture,
-        euroStatus: vehicle.euroStatus || 'Unknown',
-        ulezCompliant: vehicle.euroStatus?.toLowerCase().includes('euro')
-          ? 'Yes'
-          : 'Unknown',
-        vehicleAge: `${new Date().getFullYear() - vehicle.yearOfManufacture} years`,
-        registrationPlace: 'UK',
-        registrationDate: vehicle.monthOfFirstRegistration,
-        lastV5CIssuedDate: vehicle.dateOfLastV5CIssued,
-        wheelPlan: vehicle.wheelplan || 'N/A',
+        modelVariant: data.make,
+        primaryColour: data.colour,
+        fuelType: data.fuelType,
+        engine: data.engineCapacity ? `${data.engineCapacity} cc` : undefined,
+        yearOfManufacture: data.yearOfManufacture,
+        euroStatus: data.euroStatus,
+        wheelPlan: data.wheelplan,
+        lastV5CIssuedDate: data.dateOfLastV5CIssued,
+        registrationDate: data.monthOfFirstRegistration,
       },
-      mileageInformation: {
-        lastMotMileage: mileageInfo.lastMotMileage,
-        mileageIssues: mileageInfo.mileageIssues,
-        average: mileageInfo.average,
-        status: mileageInfo.status,
-      },
-      motHistorySummary: {
-        totalTests: motSummary.totalTests,
-        passed: motSummary.passed,
-        failed: motSummary.failed,
-      },
-      performance: {
-        power: vehicle.engineCapacity
-          ? `${Math.round(vehicle.engineCapacity * 0.11)} BHP`
-          : 'N/A',
-        maxSpeed: 'N/A',
-        maxTorque: 'N/A',
-        zeroToSixty: 'N/A',
+      co2EmissionFigures: {
+        value: data.co2Emissions?.toString(),
       },
       importantVehicleInformation: {
         exported: vehicle.markedForExport ? 'Yes' : 'No',
@@ -261,17 +146,55 @@ export class CheckCarService {
     };
   }
 
-  // ─── Utilities ─────────────────────────────────────────────
+  // ─── Private: MOT data → MotHistory format ──────────────────────
+  private buildMotHistoryData(
+    motData: Awaited<ReturnType<typeof getMotHistory>>,
+    userId: string,
+    checkCarId: string,
+  ) {
+    const tests = motData.motTests ?? [];
+    const passed = tests.filter((t) => t.testResult === 'PASSED').length;
+    const failed = tests.filter((t) => t.testResult === 'FAILED').length;
+    const latest = tests[0]; // API returns newest first
 
-  private getDaysLeft(date?: string): string {
-    if (!date) return 'N/A';
-    const targetDate = new Date(date);
-    if (Number.isNaN(targetDate.getTime())) return 'N/A';
-    const diffInDays = Math.ceil(
-      (targetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-    );
-    return `${Math.max(diffInDays, 0)} days left`;
+    const lastMileage = latest?.odometerValue
+      ? parseInt(latest.odometerValue, 10)
+      : undefined;
+
+    return {
+      user: userId,
+      checkCar: checkCarId,
+      registrationNumber: motData.registration,
+      make: motData.make,
+      model: motData.model,
+      primaryColour: motData.primaryColour,
+      fuelType: motData.fuelType,
+      firstUsedDate: motData.firstUsedDate,
+      dvlaId: motData.dvlaId,
+      dvlaMake: motData.dvlaMake,
+      engineSize: motData.engineSize,
+      motTests: tests,
+      totalTests: tests.length,
+      totalPassed: passed,
+      totalFailed: failed,
+      latestTestResult: latest?.testResult,
+      latestExpiryDate: latest?.expiryDate,
+      lastMileage,
+    };
   }
+
+  // ─── FREE DVLA check ────────────────────────────────────────────
+  async freeCheckCar(userId: string, registrationNumber: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new HttpException('User not found', 404);
+
+    const dvlaData = await freeDvlaCarCheck(registrationNumber);
+    const checkCarData = this.buildCheckCarData(dvlaData);
+
+    const saved = await this.checkCarModel.create({
+      ...checkCarData,
+      user: user._id,
+    });
 
   private getCo2Rating(value: number): string {
     if (value <= 100) return 'A';
@@ -281,5 +204,55 @@ export class CheckCarService {
     if (value <= 180) return 'E';
     if (value <= 200) return 'F';
     return 'G';
+  }
+
+  // ─── PAID DVLA check ────────────────────────────────────────────
+  async paidCheckCar(userId: string, registrationNumber: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new HttpException('User not found', 404);
+
+    const dvlaData = await paidDvlaCarCheck(registrationNumber);
+    const checkCarData = this.buildCheckCarData(dvlaData);
+
+    const saved = await this.checkCarModel.create({
+      ...checkCarData,
+      user: user._id,
+    });
+
+    return saved;
+  }
+
+  // ─── MOT History check ──────────────────────────────────────────
+  async motHistoryCheck(userId: string, registrationNumber: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new HttpException('User not found', 404);
+
+    // Also save a CheckCar record (DVLA) alongside MOT
+    const dvlaData = await freeDvlaCarCheck(registrationNumber);
+    const checkCarData = this.buildCheckCarData(dvlaData);
+    const checkCar = await this.checkCarModel.create({
+      ...checkCarData,
+      user: user._id,
+    });
+
+    // Get MOT history
+    const motData = await getMotHistory(registrationNumber);
+    const motHistoryData = this.buildMotHistoryData(
+      motData,
+      String(user._id),
+      String(checkCar._id),
+    );
+
+    const savedMot = await this.motHistoryModel.create(motHistoryData);
+
+    return {
+      vehicle: checkCar,
+      motHistory: savedMot,
+    };
+  }
+
+  // ─── Backward compat (existing route এর জন্য) ──────────────────
+  async createCheckCar(userId: string, registrationNumber: string) {
+    return this.freeCheckCar(userId, registrationNumber);
   }
 }

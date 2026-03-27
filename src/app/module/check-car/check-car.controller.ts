@@ -26,89 +26,45 @@ import AuthGuard from 'src/app/middlewares/auth.guard';
 import type { Request } from 'express';
 
 @ApiTags('check-car')
+@ApiBearerAuth('access-token')
+@UseGuards(AuthGuard('user'))
 @Controller('check-car')
 export class CheckCarController {
   constructor(private readonly checkCarService: CheckCarService) {}
 
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({
-    summary: 'Create vehicle report data from DVLA registration lookup',
-  })
-  @ApiBody({ type: CreateCheckCarDto })
-  @ApiCreatedResponse({ description: 'Vehicle report created successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid registration number' })
-  @ApiNotFoundResponse({ description: 'Vehicle not found in DVLA' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(AuthGuard('user'))
-  async createCheckCar(@Req() req: Request, @Body() dto: CreateCheckCarDto) {
-    const result = await this.checkCarService.createCheckCar(req.user!.id, dto);
-    return {
-      statusCode: 201,
-      success: true,
-      message: 'Vehicle report created successfully',
-      data: result,
-    };
+  // POST /check-car/free
+  @Post('free')
+  @ApiOperation({ summary: 'Free DVLA car check' })
+  @HttpCode(HttpStatus.OK)
+  async freeCheck(@Req() req: Request, @Body() body: CheckCarRouteDto) {
+    const result = await this.checkCarService.freeCheckCar(
+      req.user!.id,
+      body.registrationNumber,
+    );
+    return { message: 'Free car check successful', data: result };
   }
 
-  @Get('history/:registration')
+  // POST /check-car/paid
+  @Post('paid')
+  @ApiOperation({ summary: 'Paid DVLA car check (more detailed)' })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get full MOT history for a vehicle' })
-  @ApiParam({
-    name: 'registration',
-    example: 'AB12CDE',
-    description: 'UK vehicle registration number (no spaces)',
-  })
-  @ApiOkResponse({
-    description: 'Full MOT history returned successfully',
-    schema: {
-      example: {
-        statusCode: 200,
-        success: true,
-        message: 'MOT history fetched successfully',
-        data: {
-          registration: 'AB12CDE',
-          make: 'BMW',
-          model: '3 SERIES',
-          firstUsedDate: '2018-05-01',
-          fuelType: 'Petrol',
-          primaryColour: 'Black',
-          hasOutstandingRecall: 'No',
-          summary: { totalTests: 4, passed: 4, failed: 0 },
-          mileage: {
-            lastMotMileage: 40080,
-            average: 5010,
-            mileageIssues: 'No issues detected',
-            status: 'LOW',
-          },
-          motTests: [
-            {
-              completedDate: '2024-05-10',
-              testResult: 'PASSED',
-              expiryDate: '2025-05-09',
-              odometerValue: 40080,
-              odometerUnit: 'mi',
-              motTestNumber: '123456789',
-              defects: [],
-              advisories: [],
-              minorDefects: [],
-              majorDefects: [],
-              dangerousDefects: [],
-              prsFails: [],
-            },
-          ],
-        },
-      },
-    },
-  })
-  @ApiNotFoundResponse({ description: 'Vehicle not found in DVLA' })
-  async getMotHistory(@Param('registration') registration: string) {
-    const result = await this.checkCarService.getMotHistory(registration);
-    return {
-      statusCode: 200,
-      success: true,
-      message: 'MOT history fetched successfully',
-      data: result,
-    };
+  async paidCheck(@Req() req: Request, @Body() body: CheckCarRouteDto) {
+    const result = await this.checkCarService.paidCheckCar(
+      req.user!.id,
+      body.registrationNumber,
+    );
+    return { message: 'Paid car check successful', data: result };
+  }
+
+  // POST /check-car/mot-history
+  @Post('mot-history')
+  @ApiOperation({ summary: 'Full MOT history check (DVSA)' })
+  @HttpCode(HttpStatus.OK)
+  async motHistory(@Req() req: Request, @Body() body: CheckCarRouteDto) {
+    const result = await this.checkCarService.motHistoryCheck(
+      req.user!.id,
+      body.registrationNumber,
+    );
+    return { message: 'MOT history fetched successfully', data: result };
   }
 }
