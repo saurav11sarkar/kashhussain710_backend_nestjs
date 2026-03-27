@@ -1,14 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import {
-  DvsaMotResponse,
-  extractMileageInfo,
-  extractMotSummary,
-  freeDvlaApi,
-  getDvsaMotHistory,
-  VehicleResponse,
-} from 'src/app/helpers/davlaAPI';
 import { CheckCar, CheckCarDocument } from './entities/check-car.entity';
 
 import { User, UserDocument } from '../user/entities/user.entity';
@@ -51,8 +43,8 @@ export class CheckCarService {
     return {
       registrationNumber: data.registrationNumber,
       heroSection: {
-        registrationNumber: vehicle.registrationNumber,
-        vehicleName: vehicle.make,
+        registrationNumber: data.registrationNumber,
+        vehicleName: data.make,
         tax: {
           expiryDate: data.taxDueDate,
           daysLeft: taxDays !== null ? `${taxDays} days` : undefined,
@@ -77,72 +69,8 @@ export class CheckCarService {
         value: data.co2Emissions?.toString(),
       },
       importantVehicleInformation: {
-        exported: vehicle.markedForExport ? 'Yes' : 'No',
-        safetyRecalls: 'Need premium provider',
-        damageHistory: 'Need premium provider',
-        salvageHistory: 'Need premium provider',
-        fullServiceHistory: 'Need premium provider',
-        exTaxiNhsPoliceCheck: 'Need premium provider',
-        writtenOff: 'Need premium provider',
-        internetHistory: 'Need premium provider',
-        onFinance: 'Need premium provider',
-        keeperPlateChangesImportExportVinLogbookCheck: 'Need premium provider',
-        stolen: 'Need premium provider',
+        exported: data.markedForExport ? 'Yes' : 'No',
       },
-      dimensionsAndWeight: {
-        width: 'N/A',
-        height: 'N/A',
-        length: 'N/A',
-        wheelBase: 'N/A',
-        kerbWeight: 'N/A',
-        maxAllowedWeight: 'N/A',
-      },
-      fuelEconomy: {
-        urban: 'N/A',
-        extraUrban: 'N/A',
-        combined: 'N/A',
-      },
-      co2EmissionFigures: {
-        value: `${vehicle.co2Emissions || 0} g/km`,
-        rating: this.getCo2Rating(vehicle.co2Emissions || 0),
-      },
-      safetyRatings: {
-        child: 'N/A',
-        adult: 'N/A',
-        pedestrian: 'N/A',
-      },
-      roadTax: {
-        tax12MonthsCost: 'Check DVLA tax calculator',
-        tax6MonthsCost: 'Check DVLA tax calculator',
-      },
-      pricingPlans: [
-        {
-          name: 'Silver Check',
-          price: '4.99',
-          features: ['DVLA summary', 'Tax status', 'MOT status'],
-          isPopular: false,
-        },
-        {
-          name: 'Gold Check',
-          price: '9.99',
-          features: [
-            'Everything in Silver',
-            'Mileage verification',
-            'Ownership insights',
-          ],
-          isPopular: true,
-        },
-        {
-          name: 'Premium Check',
-          price: '14.99',
-          features: [
-            'Everything in Gold',
-            'Finance check',
-            'Write-off and stolen markers',
-          ],
-          isPopular: false,
-        },
-      ],
     };
   }
 
@@ -196,14 +124,7 @@ export class CheckCarService {
       user: user._id,
     });
 
-  private getCo2Rating(value: number): string {
-    if (value <= 100) return 'A';
-    if (value <= 120) return 'B';
-    if (value <= 140) return 'C';
-    if (value <= 160) return 'D';
-    if (value <= 180) return 'E';
-    if (value <= 200) return 'F';
-    return 'G';
+    return saved;
   }
 
   // ─── PAID DVLA check ────────────────────────────────────────────
