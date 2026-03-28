@@ -9,6 +9,9 @@ import { ContactModule } from './app/module/contact/contact.module';
 import { AuthModule } from './app/module/auth/auth.module';
 import { UserModule } from './app/module/user/user.module';
 import { MotHistoryModule } from './app/module/mot-history/mot-history.module';
+import { DashboardModule } from './app/module/dashboard/dashboard.module';
+import { SubscribeModule } from './app/module/subscribe/subscribe.module';
+import { PaymentModule } from './app/module/payment/payment.module';
 
 const databaseImports = config.isMongoEnabled
   ? [
@@ -24,7 +27,7 @@ const databaseImports = config.isMongoEnabled
   : [];
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), ...databaseImports, CheckCarModule, MotHistoryModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), ...databaseImports, CheckCarModule, MotHistoryModule, DashboardModule, SubscribeModule, PaymentModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -60,6 +60,9 @@ export class User {
   @Prop()
   otpExpiry?: Date;
 
+  @Prop({ enum: ['active', 'suspended'], default: 'active' })
+  status: string;
+
   @Prop()
   verifiedForget: boolean;
 

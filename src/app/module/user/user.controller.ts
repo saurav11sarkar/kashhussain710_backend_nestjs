@@ -47,59 +47,49 @@ export class UserController {
     schema: {
       type: 'object',
       properties: {
-        firstName: { type: 'string', example: 'John' },
-        lastName: { type: 'string', example: 'Doe' },
-        email: { type: 'string', example: 'john@example.com' },
-        password: { type: 'string', example: 'password123' },
-
+        fullName: { type: 'string', example: '' },
+        email: { type: 'string', example: '' },
+        password: { type: 'string', example: '' },
         role: {
           type: 'string',
-          enum: ['teacher', 'parent', 'student', 'admin'],
+          enum: ['user', 'admin'],
         },
-
         gender: {
           type: 'string',
           enum: ['male', 'female'],
         },
-
-        phoneNumber: { type: 'string', example: '+8801712345678' },
-        bio: { type: 'string', example: 'Math teacher' },
-
+        phoneNumber: { type: 'string', example: '' },
         profilePicture: {
           type: 'string',
           format: 'binary',
         },
-
-        status: {
-          type: 'string',
-          enum: ['panding', 'active', 'block'],
-        },
-
         dateOfBirth: {
           type: 'string',
-          example: '2000-05-10',
+          example: '',
         },
-
-        schoolAddress: {
+        country: {
           type: 'string',
-          example: 'Dhaka High School',
+          example: '',
         },
-
-        relationship: {
+        city: {
           type: 'string',
-          example: 'Father',
+          example: '',
         },
-
-        otp: { type: 'string' },
-
+        address: {
+          type: 'string',
+          example: '',
+        },
         verifiedForget: {
           type: 'boolean',
-          example: false,
         },
-
+        status: {
+          type: 'string',
+          enum: ['active', 'suspended'],
+          example: '',
+        },
         stripeAccountId: {
           type: 'string',
-          example: 'acct_123456789',
+          example: '',
         },
       },
     },
@@ -127,21 +117,14 @@ export class UserController {
     required: false,
     type: String,
     example: '',
-    description: 'Search by product name, description, whatWillYouGet, or size',
+    description: 'Search by ',
   })
   @ApiQuery({
-    name: 'firstName',
+    name: 'fullName',
     required: false,
     type: String,
     example: '',
-    description: 'Filter by exact firstName',
-  })
-  @ApiQuery({
-    name: 'lastName',
-    required: false,
-    type: String,
-    example: '',
-    description: 'Filter by exact description value',
+    description: 'Filter by exact fullName',
   })
   @ApiQuery({
     name: 'email',
@@ -172,25 +155,25 @@ export class UserController {
     description: 'Filter by phoneNumber value',
   })
   @ApiQuery({
-    name: 'bio',
+    name: 'country',
     required: false,
     type: String,
     example: '',
-    description: 'Filter by bio value',
+    description: 'Filter by country value',
   })
   @ApiQuery({
-    name: 'schoolAddress',
+    name: 'city',
     required: false,
     type: String,
     example: '',
-    description: 'Filter by schoolAddress value',
+    description: 'Filter by city value',
   })
   @ApiQuery({
-    name: 'relationship',
+    name: 'address',
     required: false,
     type: String,
     example: '',
-    description: 'Filter by relationship value',
+    description: 'Filter by address value',
   })
   @ApiQuery({
     name: 'status',
@@ -232,15 +215,14 @@ export class UserController {
   async getAllUser(@Req() req: Request) {
     const params = pick(req.query, [
       'searchTerm',
-      'firstName',
-      'lastName',
+      'fullName',
       'email',
       'role',
       'gender',
       'phoneNumber',
-      'bio',
-      'schoolAddress',
-      'relationship',
+      'country',
+      'city',
+      'address',
       'status',
     ]);
     const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);

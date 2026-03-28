@@ -10,15 +10,14 @@ import paginationHelper, { IOptions } from 'src/app/helpers/pagenation';
 import buildWhereConditions from 'src/app/helpers/buildWhereConditions';
 
 const userSearchAbleFields = [
-  'firstName',
-  'lastName',
+  'fullName',
   'email',
   'role',
   'gender',
   'phoneNumber',
-  'bio',
-  'schoolAddress',
-  'relationship',
+  'country',
+  'city',
+  'address',
   'status',
 ];
 

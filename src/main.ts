@@ -36,7 +36,7 @@ async function bootstrap() {
     .setTitle('Kashhussain710 API')
     .setDescription('Kashhussain710 API Documentation')
     .setVersion('1.0')
-    .addTag('arthurloo')
+    .addTag('Kashhussain710')
     .addBearerAuth(
       {
         type: 'http',

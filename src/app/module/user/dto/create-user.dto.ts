@@ -84,6 +84,11 @@ export class CreateUserDto {
   })
   verifiedForget?: boolean;
 
+  @ApiPropertyOptional({ enum: ['active', 'suspended'] })
+  @IsString()
+  @IsOptional()
+  status?: string;
+
   @ApiPropertyOptional({ example: '' })
   @IsOptional()
   @IsString()
