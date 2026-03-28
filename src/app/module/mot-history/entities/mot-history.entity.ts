@@ -18,6 +18,7 @@ class MotTest {
   @Prop() odometerValue?: string;
   @Prop() odometerUnit?: string;
   @Prop() odometerResultType?: string;
+
   @Prop({ type: [RfrComment], default: [] })
   rfrAndComments?: RfrComment[];
 }
@@ -45,7 +46,7 @@ export class MotHistory {
   @Prop({ type: [MotTest], default: [] })
   motTests?: MotTest[];
 
-  // Summary (calculated)
+  // Calculated summary
   @Prop() totalTests?: number;
   @Prop() totalPassed?: number;
   @Prop() totalFailed?: number;

@@ -26,104 +26,41 @@ export interface VehicleResponse {
   wheelplan?: string;
 }
 
-// ─── Internal helper ────────────────────────────────────────────────
-// async function callDvla(
-//   registrationNumber: string,
-//   apiKey: string,
-// ): Promise<VehicleResponse> {
-//   const vrn = registrationNumber.replace(/\s/g, '').toUpperCase();
-
-//   let response: Response;
-//   try {
-//     response = await fetch(config.devla.baseUrl, {
-//       method: 'POST',
-//       headers: {
-//         'x-api-key': apiKey,
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({ registrationNumber: vrn }),
-//     });
-//   } catch {
-//     throw new ServiceUnavailableException(
-//       'Unable to connect to DVLA service right now',
-//     );
-//   }
-
-//   if (!response.ok) {
-//     let errorMessage = `DVLA request failed with status ${response.status}`;
-//     try {
-//       const err = await response.json();
-//       errorMessage = err?.errors?.[0]?.detail ?? errorMessage;
-//     } catch {
-//       const errText = await response.text();
-//       if (errText) errorMessage = errText;
-//     }
-
-//     if (response.status === 400) throw new BadRequestException(errorMessage);
-//     if (response.status === 404) throw new NotFoundException(errorMessage);
-//     if (response.status === 401 || response.status === 403)
-//       throw new BadGatewayException('DVLA API authentication failed');
-
-//     throw new BadGatewayException(errorMessage);
-//   }
-
-//   return response.json() as Promise<VehicleResponse>;
-// }
-
+// ─── shared fetch logic ──────────────────────────────────────────────
 async function callDvla(
   registrationNumber: string,
   apiKey: string,
 ): Promise<VehicleResponse> {
   const vrn = registrationNumber.replace(/\s/g, '').toUpperCase();
 
-  if (!vrn || vrn.length < 5) {
-    throw new BadRequestException('Invalid registration number');
-  }
-
   let response: Response;
-
   try {
     response = await fetch(config.devla.baseUrl, {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey.trim(), // 🔥 trim added
+        'x-api-key': apiKey,
         'Content-Type': 'application/json',
-        Accept: 'application/json',
       },
       body: JSON.stringify({ registrationNumber: vrn }),
     });
-  } catch (error) {
-    console.log(error);
-    throw new ServiceUnavailableException(
-      'Unable to connect to DVLA service right now',
-    );
+  } catch {
+    throw new ServiceUnavailableException('Unable to connect to DVLA service');
   }
 
-  // 🔥 DEBUG LOG (temporary)
-  console.log('DVLA STATUS:', response.status);
-
   if (!response.ok) {
-    let errorMessage = `DVLA request failed with status ${response.status}`;
-
+    let errorMessage = `DVLA request failed: ${response.status}`;
     try {
       const err = await response.json();
-      console.log('DVLA ERROR BODY:', err); // 🔥 important debug
       errorMessage = err?.errors?.[0]?.detail ?? errorMessage;
     } catch {
-      const errText = await response.text();
-      console.log('DVLA ERROR TEXT:', errText); // 🔥 debug
-      if (errText) errorMessage = errText;
+      const text = await response.text();
+      if (text) errorMessage = text;
     }
 
     if (response.status === 400) throw new BadRequestException(errorMessage);
-
-    if (response.status === 404)
-      throw new NotFoundException('Vehicle not found');
-
+    if (response.status === 404) throw new NotFoundException(errorMessage);
     if (response.status === 401 || response.status === 403)
-      throw new BadGatewayException(
-        'DVLA API authentication failed (check API key or IP)',
-      );
+      throw new BadGatewayException('DVLA API authentication failed');
 
     throw new BadGatewayException(errorMessage);
   }
@@ -131,8 +68,8 @@ async function callDvla(
   return response.json() as Promise<VehicleResponse>;
 }
 
-// ─── Free key ───────────────────────────────────────────────────────
-export async function freeDvlaCarCheck(
+// ─── FREE DVLA ───────────────────────────────────────────────────────
+export async function freeDVLACarCheck(
   registrationNumber: string,
 ): Promise<VehicleResponse> {
   const apiKey = config.devla.freeDevialKey;
@@ -141,8 +78,8 @@ export async function freeDvlaCarCheck(
   return callDvla(registrationNumber, apiKey);
 }
 
-// ─── Paid key ───────────────────────────────────────────────────────
-export async function paidDvlaCarCheck(
+// ─── PAID DVLA ───────────────────────────────────────────────────────
+export async function paidDVLACarCheck(
   registrationNumber: string,
 ): Promise<VehicleResponse> {
   const apiKey = config.devla.paidDevialKey;
@@ -151,9 +88,5 @@ export async function paidDvlaCarCheck(
   return callDvla(registrationNumber, apiKey);
 }
 
-// ─── Auto (paid → free fallback) ────────────────────────────────────
-export async function freeDvlaApi(
-  registrationNumber: string,
-): Promise<VehicleResponse> {
-  return freeDvlaCarCheck(registrationNumber);
-}
+// ─── backward compat (পুরনো import ভাঙবে না) ────────────────────────
+export const freeDvlaApi = freeDVLACarCheck;
