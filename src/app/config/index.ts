@@ -45,12 +45,14 @@ export default {
     defaultKeyType: process.env.DVLA_KEY_TYPE || 'free',
   },
   mot: {
-    clientId: process.env.DVSA_CLIENT_ID,
-    clientSecret: process.env.DVSA_CLIENT_SECRET,
-    apiKey: process.env.DVSA_API_KEY,
-    scopeUrl: process.env.DVSA_SCOPE,
-    tokenUrl: process.env.DVSA_TOKEN_URL,
-    apiBase: process.env.DVSA_MOT_API_URL,
+    clientId: process.env.MOT_CLIENT_ID,
+    clientSecret: process.env.MOT_CLIENT_SECRET,
+    apiKey: process.env.MOT_API_KEY,
+    scopeUrl: process.env.MOT_SCOPE_URL || 'https://tapi.dvsa.gov.uk/.default',
+    tokenUrl: process.env.MOT_TOKEN_URL,
+    apiBase:
+      process.env.MOT_API_BASE ||
+      'https://history.mot.api.gov.uk/v1/trade/vehicles',
   },
   frontendUrl: process.env.FRONTEND_URL,
 };

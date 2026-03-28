@@ -24,35 +24,35 @@ export class CheckCarController {
   @Post('free')
   @ApiOperation({ summary: 'Free DVLA car check' })
   @HttpCode(HttpStatus.OK)
-  async freeCheck(@Req() req: Request, @Body() body: CheckCarRouteDto) {
-    const result = await this.checkCarService.freeCheckCar(
+  async freeDVLACheck(@Req() req: Request, @Body() body: CheckCarRouteDto) {
+    const data = await this.checkCarService.freeDVLACheck(
       req.user!.id,
       body.registrationNumber,
     );
-    return { message: 'Free car check successful', data: result };
+    return { message: 'Free DVLA check successful', data };
   }
 
   // POST /check-car/paid
   @Post('paid')
-  @ApiOperation({ summary: 'Paid DVLA car check (more detailed)' })
+  @ApiOperation({ summary: 'Paid DVLA car check' })
   @HttpCode(HttpStatus.OK)
-  async paidCheck(@Req() req: Request, @Body() body: CheckCarRouteDto) {
-    const result = await this.checkCarService.paidCheckCar(
+  async paidDVLACheck(@Req() req: Request, @Body() body: CheckCarRouteDto) {
+    const data = await this.checkCarService.paidDVLACheck(
       req.user!.id,
       body.registrationNumber,
     );
-    return { message: 'Paid car check successful', data: result };
+    return { message: 'Paid DVLA check successful', data };
   }
 
   // POST /check-car/mot-history
   @Post('mot-history')
-  @ApiOperation({ summary: 'Full MOT history check (DVSA)' })
+  @ApiOperation({ summary: 'Full MOT history (DVSA + DVLA)' })
   @HttpCode(HttpStatus.OK)
   async motHistory(@Req() req: Request, @Body() body: CheckCarRouteDto) {
-    const result = await this.checkCarService.motHistoryCheck(
+    const data = await this.checkCarService.motHistoryCheck(
       req.user!.id,
       body.registrationNumber,
     );
-    return { message: 'MOT history fetched successfully', data: result };
+    return { message: 'MOT history fetched successfully', data };
   }
 }

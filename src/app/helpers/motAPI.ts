@@ -1,10 +1,15 @@
 import {
   InternalServerErrorException,
-  ServiceUnavailableException,
   NotFoundException,
-  HttpException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import config from '../config';
+
+export interface MotRfrComment {
+  text: string;
+  type: string;
+  dangerous?: boolean;
+}
 
 export interface MotTestRecord {
   completedDate: string;
@@ -13,11 +18,7 @@ export interface MotTestRecord {
   odometerValue?: string;
   odometerUnit?: string;
   odometerResultType?: string;
-  rfrAndComments?: {
-    text: string;
-    type: string;
-    dangerous?: boolean;
-  }[];
+  rfrAndComments?: MotRfrComment[];
 }
 
 export interface MotVehicleResponse {
@@ -33,7 +34,7 @@ export interface MotVehicleResponse {
   motTests?: MotTestRecord[];
 }
 
-// Token cache
+// ─── Token cache (module-level, process চলা পর্যন্ত থাকবে) ──────────
 let cachedToken: string | null = null;
 let tokenExpiry = 0;
 
@@ -42,9 +43,10 @@ async function getMotAccessToken(): Promise<string> {
   if (cachedToken && now < tokenExpiry) return cachedToken;
 
   const { clientId, clientSecret, scopeUrl, tokenUrl } = config.mot;
-
-  if (!clientId || !clientSecret || !scopeUrl || !tokenUrl)
-    throw new InternalServerErrorException('MOT API credentials missing');
+  if (!clientId || !clientSecret || !tokenUrl)
+    throw new InternalServerErrorException(
+      'MOT API credentials missing in .env',
+    );
 
   const params = new URLSearchParams({
     grant_type: 'client_credentials',
@@ -68,22 +70,23 @@ async function getMotAccessToken(): Promise<string> {
 
   if (!res.ok)
     throw new InternalServerErrorException(
-      `MOT token fetch failed: ${res.status}`,
+      `MOT token fetch failed with status ${res.status}`,
     );
 
   const json = await res.json();
   cachedToken = json.access_token as string;
+  // expires_in সাধারণত 3600s, ৬০s আগেই refresh করব
   tokenExpiry = now + (json.expires_in - 60) * 1000;
 
   return cachedToken;
 }
 
-export async function getMotHistory(
+// ─── MOT History fetch ────────────────────────────────────────────────
+export async function getMOTHistory(
   registrationNumber: string,
 ): Promise<MotVehicleResponse> {
   const token = await getMotAccessToken();
   const vrn = registrationNumber.replace(/\s/g, '').toUpperCase();
-  if (!token) throw new HttpException('token is not fount', 404);
 
   let res: Response;
   try {
