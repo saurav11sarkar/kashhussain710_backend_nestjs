@@ -33,6 +33,7 @@ export default {
     admin: process.env.ADMIN_EMAIL,
   },
   stripe: {
+    publicKey: process.env.STRIPE_PUBLISHABLE_KEY,
     secretKey: process.env.STRIPE_SECRET_KEY,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   },
