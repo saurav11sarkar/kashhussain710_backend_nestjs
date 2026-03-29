@@ -1,34 +1,31 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Param, Req, UseGuards } from '@nestjs/common';
 import { PaymentService } from './payment.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
-import { UpdatePaymentDto } from './dto/update-payment.dto';
+import type { Request } from 'express';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import AuthGuard from 'src/app/middlewares/auth.guard';
 
+@ApiTags('payment')
 @Controller('payment')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
-  @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto) {
-    return this.paymentService.create(createPaymentDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.paymentService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.paymentService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaymentDto: UpdatePaymentDto) {
-    return this.paymentService.update(+id, updatePaymentDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.paymentService.remove(+id);
+  @Post(':subscribeId')
+  @ApiOperation({
+    summary: 'Create payment intent for car checker subscription',
+  })
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard('user'))
+  async payCarCheckerSubscribe(
+    @Req() req: Request,
+    @Param('subscribeId') subscribeId: string,
+  ) {
+    const result = await this.paymentService.payCarCheckerSubscribe(
+      req.user!.id,
+      subscribeId,
+    );
+    return {
+      message: 'Payment intent created successfully',
+      data: result,
+    };
   }
 }
