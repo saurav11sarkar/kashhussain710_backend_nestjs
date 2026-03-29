@@ -9,6 +9,9 @@ import {
 } from '../subscribe/entities/subscribe.entity';
 import Stripe from 'stripe';
 import config from 'src/app/config';
+import { IFilterParams } from 'src/app/helpers/pick';
+import paginationHelper, { IOptions } from 'src/app/helpers/pagenation';
+import buildWhereConditions from 'src/app/helpers/buildWhereConditions';
 
 @Injectable()
 export class PaymentService {
@@ -104,5 +107,44 @@ export class PaymentService {
       paymentIntentId: paymentIntent.id,
       amount: plan.price,
     };
+  }
+
+  async getAllPayment(params: IFilterParams, options: IOptions) {
+    const { limit, page, skip, sortBy, sortOrder } = paginationHelper(options);
+
+    const userSearchAbleFields = ['paymentType', 'status'];
+
+    const whereConditions = buildWhereConditions(params, userSearchAbleFields);
+
+    const total = await this.paymentModel.countDocuments(whereConditions);
+    const users = await this.paymentModel
+      .find(whereConditions)
+      .skip(skip)
+      .limit(limit)
+      .sort({ [sortBy]: sortOrder } as any)
+      .populate('user')
+      .populate('subscribe');
+
+    return {
+      meta: {
+        page,
+        limit,
+        total,
+      },
+      data: users,
+    };
+  }
+
+  async getSinglePayment(id: string) {
+    const payment = await this.paymentModel
+      .findById(id)
+      .populate('user')
+      .populate('subscribe');
+
+    if (!payment) {
+      throw new HttpException('Payment not found', 404);
+    }
+
+    return payment;
   }
 }
