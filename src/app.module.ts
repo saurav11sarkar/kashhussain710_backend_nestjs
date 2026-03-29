@@ -12,6 +12,7 @@ import { MotHistoryModule } from './app/module/mot-history/mot-history.module';
 import { DashboardModule } from './app/module/dashboard/dashboard.module';
 import { SubscribeModule } from './app/module/subscribe/subscribe.module';
 import { PaymentModule } from './app/module/payment/payment.module';
+import { WebhookModule } from './app/module/webhook/webhook.module';
 
 const databaseImports = config.isMongoEnabled
   ? [
@@ -27,7 +28,7 @@ const databaseImports = config.isMongoEnabled
   : [];
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), ...databaseImports, CheckCarModule, MotHistoryModule, DashboardModule, SubscribeModule, PaymentModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), ...databaseImports, CheckCarModule, MotHistoryModule, DashboardModule, SubscribeModule, PaymentModule, WebhookModule],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -6,11 +6,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import dotenv from 'dotenv';
 import { UtilsInterceptor } from './app/utils/utils.interceptor';
 import { GlobalExceptionFilter } from './app/middlewares/globalErrors.filter';
+import express from 'express';
 dotenv.config();
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn'],
   });
+
+  app.use('/api/v1/webhook', express.raw({ type: 'application/json' }));
 
   app.use(cookieParser());
   app.enableCors({
@@ -52,17 +56,15 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-    },
+    swaggerOptions: { persistAuthorization: true },
   });
 
   await app.listen(process.env.PORT ?? 3000, () => {
     console.log(
-      `Server is running on port http://localhost:${process.env.PORT ?? 3000}`,
+      `Server is running on http://localhost:${process.env.PORT ?? 3000}`,
     );
     console.log(
-      `Swagger URL: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
+      `Swagger: http://localhost:${process.env.PORT ?? 3000}/api/docs`,
     );
   });
 }
