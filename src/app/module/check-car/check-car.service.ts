@@ -1,6 +1,6 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CheckCar, CheckCarDocument } from './entities/check-car.entity';
 import { User, UserDocument } from '../user/entities/user.entity';
 import {
@@ -156,5 +156,23 @@ export class CheckCarService {
   // ─── backward compat ──────────────────────────────────────────────
   async createCheckCar(userId: string, registrationNumber: string) {
     return this.freeDVLACheck(userId, registrationNumber);
+  }
+
+  async checkMyCar(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new HttpException('User not found', 404);
+    const checkCars = await this.checkCarModel.find({ user: user._id });
+    return checkCars;
+  }
+
+  async getSingleCheckCar(checkCarId: string) {
+    const checkCar = await this.checkCarModel.findById(checkCarId);
+    if (!checkCar) throw new HttpException('Check car not found', 404);
+
+    const motHistory = await this.motHistoryModel.findOne({
+      checkCar: new Types.ObjectId(checkCarId), // ✅ string → ObjectId cast
+    });
+
+    return { checkCar, motHistory };
   }
 }

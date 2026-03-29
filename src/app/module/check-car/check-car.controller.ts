@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Req,
   UseGuards,
@@ -54,5 +56,23 @@ export class CheckCarController {
       body.registrationNumber,
     );
     return { message: 'MOT history fetched successfully', data };
+  }
+
+  @Get('my-checkcar')
+  @ApiOperation({ summary: 'My car checkr fetched successfully' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard('user'))
+  @HttpCode(HttpStatus.OK)
+  async checkMyCar(@Req() req: Request) {
+    const data = await this.checkCarService.checkMyCar(req.user!.id);
+    return { message: 'Your Car Checks', data };
+  }
+
+  @Get('single/:id')
+  @ApiOperation({ summary: 'Car checker fetched successfully' })
+  @HttpCode(HttpStatus.OK)
+  async checkMyCarById(@Param('id') id: string) {
+    const data = await this.checkCarService.getSingleCheckCar(id);
+    return { message: 'Your Car Check', data };
   }
 }
