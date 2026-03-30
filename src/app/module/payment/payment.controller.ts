@@ -46,8 +46,8 @@ export class PaymentController {
 
   @Get()
   @ApiOperation({ summary: 'Get all payemnt' })
-  // @ApiBearerAuth('access-token')
-  // @UseGuards(AuthGuard('admin'))
+  @ApiBearerAuth('access-token')
+  @UseGuards(AuthGuard('admin'))
   @ApiQuery({
     name: 'searchTerm',
     required: false,

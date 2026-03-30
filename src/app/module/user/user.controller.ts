@@ -217,12 +217,6 @@ export class UserController {
       'searchTerm',
       'fullName',
       'email',
-      'role',
-      'gender',
-      'phoneNumber',
-      'country',
-      'city',
-      'address',
       'status',
     ]);
     const options = pick(req.query, ['limit', 'page', 'sortBy', 'sortOrder']);
