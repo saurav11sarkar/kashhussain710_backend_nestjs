@@ -14,6 +14,7 @@ import { CheckCarService } from './check-car.service';
 import { CheckCarRouteDto } from './dto/check-car-route.dto';
 import AuthGuard from 'src/app/middlewares/auth.guard';
 import type { Request } from 'express';
+import pick from 'src/app/helpers/pick';
 
 @ApiTags('check-car')
 @ApiBearerAuth('access-token')
@@ -64,8 +65,15 @@ export class CheckCarController {
   @UseGuards(AuthGuard('user'))
   @HttpCode(HttpStatus.OK)
   async checkMyCar(@Req() req: Request) {
-    const data = await this.checkCarService.checkMyCar(req.user!.id);
-    return { message: 'Your Car Checks', data };
+    const options = pick(req.query, [
+      'limit',
+      'page',
+      'skip',
+      'sortBy',
+      'sortOrder',
+    ]);
+    const result = await this.checkCarService.checkMyCar(req.user!.id, options);
+    return { message: 'Your Car Checks', meta: result.meta, data: result.data };
   }
 
   @Get('single/:id')

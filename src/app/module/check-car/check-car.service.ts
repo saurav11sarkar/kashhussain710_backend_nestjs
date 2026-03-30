@@ -13,6 +13,7 @@ import {
   VehicleResponse,
 } from 'src/app/helpers/davlaAPI';
 import { getMOTHistory, MotVehicleResponse } from 'src/app/helpers/motAPI';
+import paginationHelper, { IOptions } from 'src/app/helpers/pagenation';
 
 @Injectable()
 export class CheckCarService {
@@ -158,11 +159,24 @@ export class CheckCarService {
     return this.freeDVLACheck(userId, registrationNumber);
   }
 
-  async checkMyCar(userId: string) {
+  async checkMyCar(userId: string, options: IOptions) {
+    const { limit, page, skip, sortBy, sortOrder } = paginationHelper(options);
     const user = await this.userModel.findById(userId);
     if (!user) throw new HttpException('User not found', 404);
-    const checkCars = await this.checkCarModel.find({ user: user._id });
-    return checkCars;
+    const checkCars = await this.checkCarModel
+      .find({ user: user._id })
+      .limit(limit)
+      .skip(skip)
+      .sort({ [sortBy]: sortOrder } as any);
+    const total = await this.checkCarModel.countDocuments({ user: user._id });
+    return {
+      data: checkCars,
+      meta: {
+        page,
+        limit,
+        total,
+      },
+    };
   }
 
   async getSingleCheckCar(checkCarId: string) {
