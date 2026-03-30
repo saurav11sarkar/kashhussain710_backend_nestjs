@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -81,6 +82,14 @@ export class CheckCarController {
   @HttpCode(HttpStatus.OK)
   async checkMyCarById(@Param('id') id: string) {
     const data = await this.checkCarService.getSingleCheckCar(id);
+    return { message: 'Your Car Check', data };
+  }
+
+  @Delete('single/:id')
+  @ApiOperation({ summary: 'Car checker delete successfully' })
+  @HttpCode(HttpStatus.OK)
+  async deleteCarCheck(@Param('id') id: string) {
+    const data = await this.checkCarService.deleteCarCheck(id);
     return { message: 'Your Car Check', data };
   }
 }
