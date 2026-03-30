@@ -114,9 +114,47 @@ export class PaymentService {
 
     const userSearchAbleFields = ['paymentType', 'status'];
 
-    const whereConditions = buildWhereConditions(params, userSearchAbleFields);
+    const { searchTerm, ...filterData } = params;
+
+    let whereConditions: any = {};
+
+    if (searchTerm) {
+      whereConditions.$or = userSearchAbleFields.map((field) => ({
+        [field]: { $regex: searchTerm, $options: 'i' },
+      }));
+    }
+
+
+    let userIds: any[] = [];
+    if (searchTerm) {
+      const users = await this.userModel
+        .find({
+          $or: [
+            { fullName: { $regex: searchTerm, $options: 'i' } },
+            { email: { $regex: searchTerm, $options: 'i' } },
+          ],
+        })
+        .select('_id');
+
+      userIds = users.map((user) => user._id);
+    }
+
+    if (userIds.length > 0) {
+      whereConditions.$or = [
+        ...(whereConditions.$or || []),
+        { user: { $in: userIds } },
+      ];
+    }
+
+
+    if (Object.keys(filterData).length) {
+      whereConditions.$and = Object.entries(filterData).map(([key, value]) => ({
+        [key]: value,
+      }));
+    }
 
     const total = await this.paymentModel.countDocuments(whereConditions);
+
     const users = await this.paymentModel
       .find(whereConditions)
       .skip(skip)
