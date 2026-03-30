@@ -189,4 +189,11 @@ export class CheckCarService {
 
     return { checkCar, motHistory };
   }
+
+  async deleteCarCheck(carCheckerId: string) {
+    const result = await this.checkCarModel.findByIdAndDelete(carCheckerId);
+    if (!result) throw new HttpException('Check car not found', 404);
+
+    return result;
+  }
 }
