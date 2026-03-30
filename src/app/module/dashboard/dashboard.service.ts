@@ -31,6 +31,11 @@ export class DashboardService {
 
     const totalEarning = await this.paymentModel.aggregate([
       {
+        $match: {
+          status: 'completed',
+        },
+      },
+      {
         $group: {
           _id: null,
           total: { $sum: '$amount' },
