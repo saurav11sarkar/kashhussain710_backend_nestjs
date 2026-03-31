@@ -90,6 +90,6 @@ export class CheckCarController {
   @HttpCode(HttpStatus.OK)
   async deleteCarCheck(@Param('id') id: string) {
     const data = await this.checkCarService.deleteCarCheck(id);
-    return { message: 'Your Car Check', data };
+    return { message: 'Car checker delete successfully', data };
   }
 }
