@@ -3,6 +3,10 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
+const carTaxProvider =
+  process.env.CARTAX_PROVIDER ||
+  (process.env.CARTAX_API_KEY?.includes('amsh') ? 'rapidapi' : 'ukvehicledata');
+
 export default {
   port: process.env.PORT || 3000,
   env: process.env.NODE_ENV || 'development',
@@ -46,10 +50,13 @@ export default {
     defaultKeyType: process.env.DVLA_KEY_TYPE || 'free',
   },
   carTax: {
+    provider: carTaxProvider,
     apiKey: process.env.CARTAX_API_KEY,
-    apiHost: 'uk-vehicle-data1.p.rapidapi.com',
+    apiHost: carTaxProvider === 'rapidapi' ? 'uk-vehicle-data1.p.rapidapi.com' : 'uk1.ukvehicledata.co.uk',
     apiUrl:
-      'https://uk-vehicle-data1.p.rapidapi.com/cartax.api.v1.Public/GetInitialReport',
+      carTaxProvider === 'rapidapi'
+        ? 'https://uk-vehicle-data1.p.rapidapi.com/cartax.api.v1.Public/GetInitialReport'
+        : 'https://uk1.ukvehicledata.co.uk/api/datapackage/VehicleData',
   },
   mot: {
     clientId: process.env.MOT_CLIENT_ID,
