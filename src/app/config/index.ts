@@ -45,6 +45,12 @@ export default {
     paidDevialKey: process.env.DVLA_PAID_API_KEY || process.env.PAID_DEVIAL_KEY,
     defaultKeyType: process.env.DVLA_KEY_TYPE || 'free',
   },
+  carTax: {
+    apiKey: process.env.CARTAX_API_KEY,
+    apiHost: 'uk-vehicle-data1.p.rapidapi.com',
+    apiUrl:
+      'https://uk-vehicle-data1.p.rapidapi.com/cartax.api.v1.Public/GetInitialReport',
+  },
   mot: {
     clientId: process.env.MOT_CLIENT_ID,
     clientSecret: process.env.MOT_CLIENT_SECRET,
