@@ -50,11 +50,17 @@ async function callDvla(
   if (!response.ok) {
     let errorMessage = `DVLA request failed: ${response.status}`;
     try {
-      const err = await response.json();
-      errorMessage = err?.errors?.[0]?.detail ?? errorMessage;
-    } catch {
       const text = await response.text();
-      if (text) errorMessage = text;
+      if (text) {
+        try {
+          const err = JSON.parse(text);
+          errorMessage = err?.errors?.[0]?.detail ?? errorMessage;
+        } catch {
+          errorMessage = text;
+        }
+      }
+    } catch {
+      // ignore read error, use default message
     }
 
     if (response.status === 400) throw new BadRequestException(errorMessage);
