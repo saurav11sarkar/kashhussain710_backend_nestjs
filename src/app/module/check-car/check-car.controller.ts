@@ -24,6 +24,20 @@ import pick from 'src/app/helpers/pick';
 export class CheckCarController {
   constructor(private readonly checkCarService: CheckCarService) {}
 
+  // POST /check-car/check  ← MAIN endpoint (auto free/paid based on subscription)
+  @Post('check')
+  @ApiOperation({
+    summary: 'Smart DVLA car check — auto-selects paid/free key based on subscription',
+  })
+  @HttpCode(HttpStatus.OK)
+  async smartCheck(@Req() req: Request, @Body() body: CheckCarRouteDto) {
+    const data = await this.checkCarService.smartCheck(
+      req.user!.id,
+      body.registrationNumber,
+    );
+    return { message: 'Car check successful', data };
+  }
+
   // POST /check-car/free
   @Post('free')
   @ApiOperation({ summary: 'Free DVLA car check' })
@@ -48,12 +62,12 @@ export class CheckCarController {
     return { message: 'Paid DVLA check successful', data };
   }
 
-  // POST /check-car/mot-history
+  // POST /check-car/mot-history  ← also subscription-aware now
   @Post('mot-history')
-  @ApiOperation({ summary: 'Full MOT history (DVSA + DVLA)' })
+  @ApiOperation({ summary: 'Full MOT history (DVSA + DVLA) — subscription-aware' })
   @HttpCode(HttpStatus.OK)
   async motHistory(@Req() req: Request, @Body() body: CheckCarRouteDto) {
-    const data = await this.checkCarService.motHistoryCheck(
+    const data = await this.checkCarService.smartMotHistoryCheck(
       req.user!.id,
       body.registrationNumber,
     );
