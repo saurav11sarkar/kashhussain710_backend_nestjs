@@ -137,10 +137,13 @@ class PricingPlan {
 @Schema({ timestamps: true })
 export class CheckCar {
   @Prop({ type: mongoose.Types.ObjectId, ref: 'User' })
-  user: Types.ObjectId;
+  user!: Types.ObjectId;
 
   @Prop({ uppercase: true, trim: true })
   registrationNumber?: string;
+
+  @Prop({ enum: ['free', 'paid'], default: 'free' })
+  keyType?: string;
 
   @Prop({ type: HeroSection })
   heroSection?: HeroSection;
