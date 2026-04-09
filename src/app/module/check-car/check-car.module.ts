@@ -9,6 +9,10 @@ import {
   MotHistory,
   MotHistorySchema,
 } from '../mot-history/entities/mot-history.entity';
+import {
+  Subscribe,
+  SubscribeSchema,
+} from '../subscribe/entities/subscribe.entity';
 
 @Module({
   imports: [
@@ -16,6 +20,7 @@ import {
       { name: CheckCar.name, schema: CheckCarSchema },
       { name: MotHistory.name, schema: MotHistorySchema },
       { name: User.name, schema: UserSchema },
+      { name: Subscribe.name, schema: SubscribeSchema },
     ]),
   ],
   controllers: [CheckCarController],

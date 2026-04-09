@@ -8,6 +8,10 @@ import {
   MotHistoryDocument,
 } from '../mot-history/entities/mot-history.entity';
 import {
+  Subscribe,
+  SubscribeDocument,
+} from '../subscribe/entities/subscribe.entity';
+import {
   freeDVLACarCheck,
   paidDVLACarCheck,
   VehicleResponse,
@@ -24,6 +28,8 @@ export class CheckCarService {
     private readonly motHistoryModel: Model<MotHistoryDocument>,
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+    @InjectModel(Subscribe.name)
+    private readonly subscribeModel: Model<SubscribeDocument>,
   ) {}
 
   // ─── DVLA response → CheckCar schema format ───────────────────────
@@ -101,6 +107,66 @@ export class CheckCarService {
         ? parseInt(latest.odometerValue, 10)
         : undefined,
     };
+  }
+
+  // ─── helper: is user subscribed? ───────────────────────────────────
+  private async isSubscribed(userId: string): Promise<boolean> {
+    const count = await this.subscribeModel.countDocuments({
+      user: new Types.ObjectId(userId),
+    });
+    return count > 0;
+  }
+
+  // ─── SMART CHECK — auto-selects paid/free based on subscription ───
+  async smartCheck(userId: string, registrationNumber: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new HttpException('User not found', 404);
+
+    const subscribed = await this.isSubscribed(userId);
+
+    // Subscribed → paid DVLA key (premium); Not subscribed → free DVLA key
+    const dvlaData = subscribed
+      ? await paidDVLACarCheck(registrationNumber)
+      : await freeDVLACarCheck(registrationNumber);
+
+    const payload = this.buildCheckCarPayload(dvlaData);
+
+    return this.checkCarModel.create({
+      ...payload,
+      user: user._id,
+      keyType: subscribed ? 'paid' : 'free',
+    });
+  }
+
+  // ─── SMART MOT History — also subscription-aware ──────────────────
+  async smartMotHistoryCheck(userId: string, registrationNumber: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new HttpException('User not found', 404);
+
+    const subscribed = await this.isSubscribed(userId);
+
+    const dvlaFn = subscribed ? paidDVLACarCheck : freeDVLACarCheck;
+
+    const [dvlaData, motData] = await Promise.all([
+      dvlaFn(registrationNumber),
+      getMOTHistory(registrationNumber),
+    ]);
+
+    const checkCar = await this.checkCarModel.create({
+      ...this.buildCheckCarPayload(dvlaData),
+      user: user._id,
+      keyType: subscribed ? 'paid' : 'free',
+    });
+
+    const motHistory = await this.motHistoryModel.create(
+      this.buildMotHistoryPayload(
+        motData,
+        String(user._id),
+        String(checkCar._id),
+      ),
+    );
+
+    return { vehicle: checkCar, motHistory };
   }
 
   // ─── 1. FREE DVLA ─────────────────────────────────────────────────
